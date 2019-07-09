@@ -7,3 +7,10 @@ I tend to run the code from my IDE (add -agentlib:TakipiAgent to VM arguments in
 
 ## How to add new Error Utilities
 In com.overops.errors, there is BaseError interface. Create a new Error class and implement the BaseError interface (see one of the other classes as an example). This class will be added to the list of classes in the main method class listed above (there is a error map in ErrorGenerator). You can classify your error type in order to generate only null pointers or invalid arguments or run all error types. Once you have the new class created, then create the actual code to create the errors in the com.overops.util package. If you look at an existing class, you will see the pattern. 
+
+## For the New Relic Tests ##
+java -javaagent:/opt/newrelic/newrelic.jar -agentpath:/opt/takipi/lib/libTakipiAgent.so -Dtakipi.application.name=SequenceGenerator -Dtakipi.deployment.name=v1.0 -jar /opt/NR_ErrorGenerator/target/overops-test.jar 100 seq
+
+The arguements:
+100 -- 100 iterations of 5-6 exceptions
+seq -- Runs the New Relic sequence in the class com.overops.util.ErrorSequenceUtil
