@@ -1,0 +1,53 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+group = 'com.takipi'
+version = '0.1.0'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.4'
+    }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+        compileOnly (
+                files([
+                  org.gradle.internal.jvm.Jvm.current().toolsJar,
+			            "/opt/appd/javaagent.jar",
+				"/opt/newrelic/newrelic-api.jar"
+                  ])
+		    )
+        compile (
+          "com.takipi:takipi-sdk:0.3.0",
+          "org.ow2.asm:asm:6.2.1"
+        )
+}
+
+jar {
+  manifest {
+        attributes(
+          "Premain-Class": "com.takipi.integrations.appdynamics.Agent",
+          "Agent-Class": "com.takipi.integrations.appdynamics.Agent",
+          "Main-Class": "com.takipi.integrations.appdynamics.Agent",
+          "Can-Redefine-Classes": "true",
+          "Can-Retransform-Classes": "true")
+    }
+
+  from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+   }
+
+}
+
+shadowJar {
+  
+}
