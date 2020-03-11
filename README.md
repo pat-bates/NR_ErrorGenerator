@@ -1,16 +1,102 @@
-# Error Generator
-A series of code utilities that generate random Java errors. The idea is to build different classes and then use class for name to randomly call them
+# Error Generator Sping Boot Applictions
+A series of code utilities that generate random Java errors.
 
-## Using Error Generator
-The main method is in com.overops.ErrorGenerator. It takes in two parameters (length of run and error types)
-I tend to run the code from my IDE (add -agentlib:TakipiAgent to VM arguments in your IDE) or you can create a JAR file by navigating to the root of the directory and running mvn clean package (make sure to add -agentlib:TakipiAgent when you invoke java -jar)
+This code is a variation/offshoot of the OverOps Error Generator:  https://github.com/takipi-field/ErrorGenerator
 
-## How to add new Error Utilities
-In com.overops.errors, there is BaseError interface. Create a new Error class and implement the BaseError interface (see one of the other classes as an example). This class will be added to the list of classes in the main method class listed above (there is a error map in ErrorGenerator). You can classify your error type in order to generate only null pointers or invalid arguments or run all error types. Once you have the new class created, then create the actual code to create the errors in the com.overops.util package. If you look at an existing class, you will see the pattern. 
+The purpose of this modification is to support automated testing through a READ API.  A number of ErrorGenerator calls have been exposed through SpringBoot to allow simple automated testing through scripting or test tools such as jmeter.
 
-## For the New Relic Tests ##
-java -javaagent:/opt/newrelic/newrelic.jar -agentpath:/opt/takipi/lib/libTakipiAgent.so -Dtakipi.application.name=SequenceGenerator -Dtakipi.deployment.name=v1.0 -jar /opt/NR_ErrorGenerator/target/overops-test.jar 100 seq
+The application deploys as a .war file and runs under tomcat.
 
-The arguements:
-100 -- 100 iterations of 5-6 exceptions
-seq -- Runs the New Relic sequence in the class com.overops.util.ErrorSequenceUtil
+The test utility can be used to drive a particular mix of arguments:
+ - Number of concurrent threads/users
+ - Error Rate as a percentage
+ - Test Duration in seconds
+ - Transactions Per Minute (TPM)
+
+The tests can be run individually or by using a provided Jmeter job and accompanying script.
+
+## Deploying Error Generator Sping Boot App using Tomcat
+
+You can use the .war in the target folder:  ErrorSpringApp.war, or you build it from scratch using maven.
+
+### To Build it from scratch
+
+mvn clean package 
+
+### To Deploy the .war file under tomcat
+
+Copy the .war file:
+
+cp ./target/ErrorServlet.war /opt/tomcat/webapps/.
+
+Restart tomcat, e.g., 
+
+<tomcat-dir>/bin/shutdown.sh
+<tomcat-dir>/bin/startup.sh
+
+## To Run the Error Generator Sping Boot App
+
+### In a browswer
+
+Enter the following URL in the broswer to generate errors one at a time:
+
+<tomcat host>:8080/ErrorSpringApp
+
+Select the type of error and click "Submit".
+
+### REST API
+
+Use the following URL to execute a single error:
+
+<tomcat cat>:8080/ErrorSpringApp/InvokeError?errorType=<error>
+
+Where <error> is one of
+  NoError
+  NullPointerException
+  NumberFormatException
+  ParseException
+  UncaughtException
+
+Scripts can be created using curl, e.g., 
+
+curl ${test_host}:8080/ErrorSpringApp/InvokeError?errorType=NullPointerException
+
+## Testing with JMeter
+
+Make sure the JMeter executable is in the PATH:
+
+export PATH=$PATH:/opt/jmeter/bin
+
+A JMeter job is included in the scripts folder that executes the Error Generator Spring Boot App
+with the following characteristics driven by variables:
+
+HOST       :  The tomcat server host name
+URLPATH    :  The application and command (InvokeError)
+DURATION   :  Length of the test run in seconds.
+              This value must have a single decimal place, e.g., 60.0
+NUM_THREADS:  The number of concurrent test threads, simulating concurrent users
+ERR_RATE   :  The percentage of error transactions (0 - 100)
+TPM        :  The number of transactions per minute.  JMeter will throttle accordingly.
+
+The command line to execute the JMeter job will look something like this:
+
+jmeter.sh -n -t OverOps_Spring_Boot_Test.jmx \
+                                -Jnum_threads=$nt \
+                                -Jno_err_rate=$no_er \
+                                -Jerr_rate=$er \
+                                -Jtpm=$tpm \
+                                -Jhost=${HOST} \
+                                -Jpath=${URLPATH} \
+                                -Jduration=${DURATION}
+
+
+### Test with the JMeter script
+
+A script file run_jmeter.sh is provided in the scripts folder as well.
+
+This script will run a sequence of tests with variable settings for 
+NUM_THREADS, ERR_RATE and TPM.
+
+Edit the file to set the arguments and arrays as desired for a particular test.
+
+
